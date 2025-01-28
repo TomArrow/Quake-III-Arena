@@ -42,7 +42,7 @@ Returns qtrue if the velocity was clipped in some way
 ==================
 */
 #define	MAX_CLIP_PLANES	5
-qboolean	PM_SlideMove( qboolean gravity ) {
+qboolean    PM_SlideMove( qboolean gravity ) {
 	int			bumpcount, numbumps;
 	vec3_t		dir;
 	float		d;
@@ -51,13 +51,13 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	vec3_t		primal_velocity;
 	vec3_t		clipVelocity;
 	int			i, j, k;
-	trace_t	trace;
+	trace_t trace;
 	vec3_t		end;
 	float		time_left;
 	float		into;
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
-	
+
 	numbumps = 4;
 
 	VectorCopy (pm->ps->velocity, primal_velocity);
@@ -69,7 +69,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
 			// slide along the ground plane
-			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
+			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal,
 				pm->ps->velocity, OVERCLIP );
 		}
 	}
@@ -243,7 +243,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	VectorCopy (pm->ps->velocity, start_v);
 
 	if ( PM_SlideMove( gravity ) == 0 ) {
-		return;		// we got exactly where we wanted to go first try	
+		return;		// we got exactly where we wanted to go first try
 	}
 
 	VectorCopy(start_o, down);
@@ -252,8 +252,10 @@ void PM_StepSlideMove( qboolean gravity ) {
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
 	if ( pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 ||
-										DotProduct(trace.plane.normal, up) < 0.7)) {
-		return;
+			DotProduct(trace.plane.normal, up) < 0.7)) {
+		if ( !(pm->ps->pm_flags & PMF_PROMODE) || pm->ps->velocity[2] > 370.0 || pm->ps->stats[STAT_JUMPTIME] <= 0 ) {
+			return;
+		}
 	}
 
 	VectorCopy (pm->ps->origin, down_o);
@@ -267,6 +269,9 @@ void PM_StepSlideMove( qboolean gravity ) {
 	if ( trace.allsolid ) {
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:bend can't step\n", c_pmove);
+		}
+		if ( pm->killWallBug ) {
+			VectorClear( pm->ps->velocity );
 		}
 		return;		// can't step up
 	}
@@ -286,6 +291,10 @@ void PM_StepSlideMove( qboolean gravity ) {
 		VectorCopy (trace.endpos, pm->ps->origin);
 	}
 	if ( trace.fraction < 1.0 ) {
+		if ( pm->ps->pm_flags & PMF_PROMODE && pm->ps->stats[STAT_DJING] ) {
+			PM_FlatClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+			return;
+		}
 		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP );
 	}
 
@@ -299,12 +308,11 @@ void PM_StepSlideMove( qboolean gravity ) {
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:bend\n", c_pmove);
 		}
-	} else 
+	} else
 #endif
 	{
 		// use the step move
 		float	delta;
-
 		delta = pm->ps->origin[2] - start_o[2];
 		if ( delta > 2 ) {
 			if ( delta < 7 ) {

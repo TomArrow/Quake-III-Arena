@@ -94,6 +94,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #error overflow: (CS_MAX) > MAX_CONFIGSTRINGS
 #endif
 
+#define PMF_PROMODE 0x8000
+
 typedef enum {
 	GT_FFA,				// free for all
 	GT_TOURNAMENT,		// one on one tournament
@@ -117,7 +119,7 @@ typedef enum { GENDER_MALE, GENDER_FEMALE, GENDER_NEUTER } gender_t;
 PMOVE MODULE
 
 The pmove code takes a player_state_t and a usercmd_t and generates a new player_state_t
-and some other output data.  Used for local prediction on the client game and true
+and some other output data.	 Used for local prediction on the client game and true
 movement on the server game.
 ===================================================================================
 */
@@ -159,36 +161,37 @@ typedef enum {
 #define	MAXTOUCH	32
 typedef struct {
 	// state (in / out)
-	playerState_t	*ps;
+	playerState_t	 *ps;
 
 	// command (in)
-	usercmd_t	cmd;
-	int			tracemask;			// collide against these types of surfaces
-	int			debugLevel;			// if set, diagnostic output will be printed
+	usercmd_t	 cmd;
+	int			   tracemask;			 // collide against these types of surfaces
+	qboolean	killWallBug;
+	int			   debugLevel;			  // if set, diagnostic output will be printed
 	qboolean	noFootsteps;		// if the game is setup for no footsteps by the server
 	qboolean	gauntletHit;		// true if a gauntlet attack would actually hit something
 
-	int			framecount;
+	int			   framecount;
 
 	// results (out)
-	int			numtouch;
-	int			touchents[MAXTOUCH];
+	int			   numtouch;
+	int			   touchents[MAXTOUCH];
 
-	vec3_t		mins, maxs;			// bounding box size
+	vec3_t		  mins, maxs;			 // bounding box size
 
-	int			watertype;
-	int			waterlevel;
+	int			   watertype;
+	int			   waterlevel;
 
-	float		xyspeed;
+	float		 xyspeed;
 
 	// for fixed msec Pmove
-	int			pmove_fixed;
-	int			pmove_msec;
+	int			   pmove_fixed;
+	int			   pmove_msec;
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
-	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
-	int			(*pointcontents)( const vec3_t point, int passEntityNum );
+	void		(*trace)( trace_t *results, const vec3_t start, vec3_t mins, vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
+	int			   (*pointcontents)( const vec3_t point, int passEntityNum );
 } pmove_t;
 
 // if a full pmove isn't done on the client, you can just update the angles
@@ -210,7 +213,12 @@ typedef enum {
 	STAT_ARMOR,				
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
-	STAT_MAX_HEALTH					// health / armor limit, changable by handicap
+	STAT_MAX_HEALTH,					// health / armor limit, changable by handicap
+	STAT_IDK,
+	STAT_IDK2,
+	STAT_IDK3,
+	STAT_JUMPTIME,
+	STAT_DJING
 } statIndex_t;
 
 
@@ -331,7 +339,7 @@ typedef enum {
 
 // entityState_t->event values
 // entity events are for effects that take place reletive
-// to an existing entities origin.  Very network efficient.
+// to an existing entities origin.	Very network efficient.
 
 // two bits at the top of the entityState->event field
 // will be incremented with each change in the event so
@@ -632,7 +640,7 @@ typedef struct gitem_s {
 	char		*pickup_name;	// for printing on pickup
 
 	int			quantity;		// for ammo how much, or duration of powerup
-	itemType_t  giType;			// IT_* flags
+	itemType_t	giType;			// IT_* flags
 
 	int			giTag;
 

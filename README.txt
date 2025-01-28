@@ -1,3 +1,6 @@
+DF Reverse stuff pasted onto q3 for informational purposes
+
+
 Quake III Arena GPL source release
 ==================================
 
